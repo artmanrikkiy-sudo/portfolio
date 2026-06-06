@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>自由配置ゲーセンマップ</title>
+    <style>
+        /* お店の床（エリア）の見た目 */
+        .shop-floor {
+            width: 100%; height: 500px;
+            background-color: #f5f6fa; border: 2px dashed #bdc3c7;
+            position: relative; margin-top: 20px; overflow: hidden;
+        }
+        
+        /* コマ（UFOキャッチャーの台）の見た目 */
+        .crane-game {
+            width: 100px; height: 100px;
+            background-color: #95a5a6; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; border-radius: 8px;
+            position: absolute; /* 自由な場所に配置できるようにする設定 */
+            cursor: move; /* マウスを載せたときに「移動できるよ」の矢印にする */
+            user-select: none;
+            transition: background-color 0.3s;
+        }
+        
+        .success { background-color: #2ecc71 !important; }
+        .danger { background-color: #e74c3c !important; }
+
+        /* ボタン類の配置 */
+        .btn-group { margin-top: 10px; display: flex; gap: 10px; }
+        button { padding: 8px 16px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>🛸 自由配置UFOキャッチャーマップ（ドラッグ対応版）</h1>
+    <p>💡 <b>台をマウスで好きな場所にドラッグして模様替えできます！</b> 点検する時は「点検モード」を押してください。</p>
+
+    <div class="btn-group">
+        <button id="mode-btn" onclick="toggleMode()" style="background-color: #f1c40f;">📁 現在：レイアウト変更モード</button>
+    </div>
+
+    <!-- お店の床の箱（この中で自由に動かせます） -->
+    <div class="shop-floor" id="floor">
+        <!-- 初期位置を少しずつずらして配置 -->
+        <div class="crane-game" id="booth-10-2P" style="top: 50px; left: 50px;">10-2P</div>
+        <div class="crane-game" id="booth-12-1P" style="top: 50px; left: 200px;">12-1P</div>
+        <div class="crane-game" id="booth-16-2P" style="top: 50px; left: 350px;">16-2P</div>
+    </div>
+
+    <script>
+        const avg = 3.90;
+        const threshold = 0.08;
+        let isEditMode = true; // 最初はレイアウト変更モード
+
+        // モードを切り替えるボタンの処理
+        function toggleMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById("mode-btn");
+            if (isEditMode) {
+                btn.innerText = "📁 現在：レイアウト変更モード";
+                btn.style.backgroundColor = "#f1c40f";
+            } else {
+                btn.innerText = "🔍 現在：点検モード（クリックで入力）";
+                btn.style.backgroundColor = "#2ecc71";
+                btn.style.color = "white";
+            }
+        }
+
+        // --- ここから下は「マウスで動かすため」の先人の知恵（JSマジック） ---
+        const games = document.querySelectorAll('.crane-game');
+        games.forEach(game => {
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            // マウスを押したとき
+            game.addEventListener('mousedown', (e) => {
+                if (!isEditMode) {
+                    // 点検モードならクリックしてデータ入力
+                    checkData(game.id.replace('booth-', ''));
+                    return;
+                }
+                isDragging = true;
+                offsetX = e.clientX - game.getBoundingClientRect().left;
+                offsetY = e.clientY - game.getBoundingClientRect().top;
+                game.style.zIndex = 1000; // 動かしている台を一番手前にする
+            });
+
+            // マウスを動かしているとき
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const floor = document.getElementById('floor').getBoundingClientRect();
+                let x = e.clientX - floor.left - offsetX;
+                let y = e.clientY - floor.top - offsetY;
+                
+                // 床の外にはみ出さないように制限
+                x = Math.max(0, Math.min(x, floor.width - game.offsetWidth));
+                y = Math.max(0, Math.min(y, floor.height - game.offsetHeight));
+
+                game.style.left = x + 'px';
+                game.style.top = y + 'px';
+            });
+
+            // マウスを離したとき
+            document.addEventListener('mouseup', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                game.style.zIndex = 1;
+            });
+        });
+
+        // いつもの判定用JavaScript
+        function checkData(boothName) {
+            let input = prompt(boothName + "番台の推定値を入力してください：");
+            if (input !== null) {
+                let value = parseFloat(input); 
+                if (isNaN(value)) {
+                    alert("❌ エラー：数字で入力してください！");
+                    return; 
+                }
+                let diff = Math.abs(value - avg);
+                let element = document.getElementById("booth-" + boothName);
+
+                if (diff > threshold) {
+                    element.classList.add("danger");
+                    element.classList.remove("success");
+                } else {
+                    element.classList.add("success");
+                    element.classList.remove("danger");
+                }
+            }
+        }
+    </script>
+</body>
+</html>

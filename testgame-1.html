@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>簡易ゲーセンマップ（3色判定版）</title>
+    <style>
+        .shop-map { display: flex; gap: 20px; margin-top: 20px; }
+        
+        /* 1. 初期状態（未判定）はグレー（灰色） */
+        .crane-game {
+            width: 120px; height: 120px;
+            background-color: #95a5a6; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer; border-radius: 8px;
+            transition: background-color 0.3s; /* 色が滑らかに変わるおまけ */
+        }
+        
+        /* 2. 正常判定が出たらグリーン（緑色）に変えるルール */
+        .success { background-color: #2ecc71 !important; }
+
+        /* 3. 異常が出たらレッド（赤色）に変えるルール */
+        .danger { background-color: #e74c3c !important; }
+    </style>
+</head>
+<body>
+
+    <h1>🛸 UFOキャッチャー配置図（3色カラー判定版）</h1>
+    <p>グレー的の台をクリックして、測定データを入力してください。</p>
+
+    <div class="shop-map">
+        <div class="crane-game" id="booth-10-2P" onclick="checkData('10-2P')">10-2P台</div>
+        <div class="crane-game" id="booth-12-1P" onclick="checkData('12-1P')">12-1P台</div>
+        <div class="crane-game" id="booth-16-2P" onclick="checkData('16-2P')">16-2P台</div>
+    </div>
+
+    <script>
+        const avg = 3.90;
+        const threshold = 0.08;
+
+        function checkData(boothName) {
+            let input = prompt(boothName + "番台的の推定値を入力してください：");
+            
+            if (input !== null) {
+                // 半角・全角変換し、数値に変換
+                let value = parseFloat(input); 
+
+                // エラー対策（文字が入力されたら弾く）
+                if (isNaN(value)) {
+                    alert("❌ エラー：半角または全角の数字で入力してください！");
+                    return; 
+                }
+
+                let diff = Math.abs(value - avg);
+                let element = document.getElementById("booth-" + boothName);
+
+                if (diff > threshold) {
+                    alert("⚠️ 異常値を検知しました！台を赤くします。");
+                    element.classList.add("danger");
+                    element.classList.remove("success"); // 緑色を消す
+                } else {
+                    alert("✅ 正常値の範囲内です。台を緑にします。");
+                    element.classList.add("success");
+                    element.classList.remove("danger"); // 赤色を消す
+                }
+            }
+        }
+    </script>
+</body>
+</html>

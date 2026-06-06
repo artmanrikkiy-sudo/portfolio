@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>位置保存＆自動整列マップ</title>
+    <style>
+        .shop-floor {
+            width: 100%; height: 500px;
+            background-color: #f5f6fa; border: 2px dashed #bdc3c7;
+            position: relative; margin-top: 20px; overflow: hidden;
+        }
+        .crane-game {
+            width: 100px; height: 100px;
+            background-color: #95a5a6; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; border-radius: 8px;
+            position: absolute; cursor: move; user-select: none;
+            transition: background-color 0.3s;
+        }
+        .success { background-color: #2ecc71 !important; }
+        .danger { background-color: #e74c3c !important; }
+        .btn-group { margin-top: 10px; display: flex; gap: 10px; }
+        button { padding: 8px 16px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none; }
+    </style>
+</head>
+<body>
+
+    <h1>🛸 UFOキャッチャー配置図（自動整列・位置保存版）</h1>
+    <p>💡 「レイアウト変更モード」で台を動かした後、<b>【この配置を保存する】</b>を押すと、ページを更新しても位置がキープされます！</p>
+
+    <div class="btn-group">
+        <button id="mode-btn" onclick="toggleMode()" style="background-color: #f1c40f;">📁 現在：レイアウト変更モード</button>
+        <button onclick="savePositions()" style="background-color: #3498db; color: white;">💾 この配置を保存する</button>
+        <button onclick="clearPositions()" style="background-color: #e74c3c; color: white;">🔄 配置を初期リセット</button>
+    </div>
+
+    <!-- ★ここに台（行）を足すだけで、自動で横にズレて並びます！ -->
+    <div class="shop-floor" id="floor">
+        <div class="crane-game" id="booth-10-2P">10-2P</div>
+        <div class="crane-game" id="booth-12-1P">12-1P</div>
+        <div class="crane-game" id="booth-16-2P">16-2P</div>
+        <div class="crane-game" id="booth-18-1P">18-1P</div> <!-- コピペで増やした台 -->
+        <div class="crane-game" id="booth-20-2P">20-2P</div> <!-- コピペで増やした台 -->
+    </div>
+
+    <script>
+        const avg = 3.90;
+        const threshold = 0.08;
+        let isEditMode = true;
+
+        // 🧠 あなたの考えた「台が増えるごとに横にずらす」理屈の心臓部
+        const games = document.querySelectorAll('.crane-game');
+        
+        // 保存された位置データをブラウザの記憶庫から読み込む
+        let savedPositions = JSON.parse(localStorage.getItem('ufo_positions')) || {};
+
+        games.forEach((game, index) => {
+            // もし保存された位置があればそれを使い、なければ「カウント(index) × 130px」ずつ右にずらす！
+            if (savedPositions[game.id]) {
+                game.style.left = savedPositions[game.id].left;
+                game.style.top = savedPositions[game.id].top;
+            } else {
+                game.style.left = (index * 130 + 20) + 'px'; // 横にずらす計算式（だるさ解消！）
+                game.style.top = '50px';
+            }
+
+            // ドラッグ＆ドロップの見張り番（中身は前回と同じ）
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            game.addEventListener('mousedown', (e) => {
+                if (!isEditMode) { checkData(game.id.replace('booth-', '')); return; }
+                isDragging = true;
+                offsetX = e.clientX - game.getBoundingClientRect().left;
+                offsetY = e.clientY - game.getBoundingClientRect().top;
+                game.style.zIndex = 1000;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const floor = document.getElementById('floor').getBoundingClientRect();
+                let x = e.clientX - floor.left - offsetX;
+                let y = e.clientY - floor.top - offsetY;
+                x = Math.max(0, Math.min(x, floor.width - game.offsetWidth));
+                y = Math.max(0, Math.min(y, floor.height - game.offsetHeight));
+                game.style.left = x + 'px';
+                game.style.top = y + 'px';
+            });
+
+            document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; game.style.zIndex = 1; } });
+        });
+
+        // 🧠 「動かした位置を保存する」理屈の心臓部
+        function savePositions() {
+            let positions = {};
+            games.forEach(game => {
+                positions[game.id] = { left: game.style.left, top: game.style.top };
+            });
+            localStorage.setItem('ufo_positions', JSON.stringify(positions)); // ブラウザの記憶庫に保存
+            alert("💾 新しいレイアウトを保存しました！");
+        }
+
+        // 配置を元に戻すボタンの処理
+        function clearPositions() {
+            localStorage.removeItem('ufo_positions');
+            alert("🔄 配置をリセットしました。ページを再読み込みします。");
+            location.reload();
+        }
+
+        function toggleMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById("mode-btn");
+            if (isEditMode) {
+                btn.innerText = "📁 現在：レイアウト変更モード"; btn.style.backgroundColor = "#f1c40f"; btn.style.color = "black";
+            } else {
+                btn.innerText = "🔍 現在：点検モード（クリックで入力）"; btn.style.backgroundColor = "#2ecc71"; btn.style.color = "white";
+            }
+        }
+
+        function checkData(boothName) {
+            let input = prompt(boothName + "番台の推定値を入力してください：");
+            if (input !== null) {
+                let value = parseFloat(input); 
+                if (isNaN(value)) { alert("❌ エラー：数字で入力してください！"); return; }
+                let diff = Math.abs(value - avg);
+                let element = document.getElementById("booth-" + boothName);
+                if (diff > threshold) { element.classList.add("danger"); element.classList.remove("success"); }
+                else { element.classList.add("success"); element.classList.remove("danger"); }
+            }
+        }
+    </script>
+</body>
+</html>
