@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>位置保存＆自動整列マップ（データ保存版）</title>
+    <!-- 外部CSSファイルを読み込む -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>🛸 UFOキャッチャー配置図（自動整列・位置保存版）</h1>
+    <p>💡 「レイアウト変更モード」で台を動かした後、<b>【この配置を保存する】</b>を押すと、ページを更新しても位置がキープされます！</p>
+
+    <div class="btn-group">
+        <button id="mode-btn" onclick="toggleMode()" style="background-color: #f1c40f;">📁 現在：レイアウト変更モード</button>
+        <button onclick="savePositions()" style="background-color: #3498db; color: white;">💾 この配置を保存する</button>
+        <button onclick="clearPositions()" style="background-color: #e74c3c; color: white;">🔄 配置とデータを初期リセット</button>
+    </div>
+
+    <div class="shop-floor" id="floor">
+        <div class="crane-game" id="booth-10-2P">10-2P</div>
+        <div class="crane-game" id="booth-12-1P">12-1P</div>
+        <div class="crane-game" id="booth-16-2P">16-2P</div>
+        <div class="crane-game" id="booth-18-1P">18-1P</div>
+        <div class="crane-game" id="booth-20-2P">20-2P</div>
+    </div>
+
+    <!-- 外部JavaScriptファイルを読み込む（必ずHTML要素の後ろ） -->
+    <script src="script.js"></script>
+</body>
+</html>
